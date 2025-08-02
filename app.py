@@ -8,8 +8,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
-# Set page configuration
-st.set_page_config(page_title="ABC Manufacturing Demand Forecasting", layout="wide")
+# Kiểm tra và cấu hình Streamlit (dòng 4 được sửa)
+try:
+    st.set_page_config(page_title="ABC Manufacturing Demand Forecasting", layout="wide")
+except AttributeError:
+    st.warning("Streamlit configuration failed. Using default layout. Ensure Streamlit is installed and updated.")
+    # Tiếp tục mà không cần layout "wide" nếu có lỗi
 
 # Title and introduction
 st.title("ABC Manufacturing Demand Forecasting")
@@ -25,7 +29,7 @@ if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
 else:
     st.warning("Please upload abc_manufacturing_orders.csv to proceed. Using a sample dataset for demo.")
-    # Sample data for demo (replace with actual file when uploaded)
+    # Sample data for demo
     df = pd.DataFrame({
         'Order_ID': range(1, 201),
         'Date': pd.date_range(start='2023-01-01', periods=200, freq='D'),
@@ -46,26 +50,20 @@ st.dataframe(buffer)
 # Step 2: Preprocessing with Error Handling
 st.header("2. Data Preprocessing")
 try:
-    # Validate required columns
     required_cols = ['Date', 'Units_Ordered', 'Inventory_Level', 'Category']
     if not all(col in df.columns for col in required_cols):
         st.error("Dataset missing required columns. Ensure 'Date', 'Units_Ordered', 'Inventory_Level', and 'Category' are present.")
         st.stop()
 
-    # Convert and validate Date
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     if df['Date'].isnull().any():
         st.warning("Some 'Date' values could not be converted. Rows with invalid dates will be excluded.")
         df = df.dropna(subset=['Date'])
 
-    # Encode categorical variable
     df = pd.get_dummies(df, columns=['Category'], prefix='Category')
-
-    # Feature engineering
     df['Year'] = df['Date'].dt.year
     df['Month'] = df['Date'].dt.month
 
-    # Scale numerical features
     scaler = StandardScaler()
     numerical_cols = ['Units_Ordered', 'Inventory_Level']
     if all(col in df.columns for col in numerical_cols):
